@@ -10,7 +10,6 @@ const client: IAgoraRTCClient = AgoraRTC.createClient({
   codec: "vp8",
 });
 
-
 function App() {
   const [isVideoSubed, setIsVideoSubed] = useState(false);
   const [resolution, setResolution] = useState<{
@@ -194,9 +193,7 @@ function App() {
       const message = event.data;
       const { type, /*from, to,*/ payload } = JSON.parse(message);
       if (type === "chat") {
-        const {
-          answer,
-        } = JSON.parse(payload);
+        const { answer } = JSON.parse(payload);
 
         setMessages((prevMessages) => [
           ...prevMessages,
@@ -218,13 +215,41 @@ function App() {
     socket?.close();
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (socket && socket.readyState === WebSocket.OPEN) {
       setSending(true);
       setMessages((prevMessages) => [
         ...prevMessages,
         { text: inputMessage, isSentByMe: true },
       ]);
+
+      /*
+        If you need to utilize your own LLM service, perform an HTTP request here.
+        Send the "inputMessage" to your backend and retrieve the response.
+        Ensure to update "mode_type" to 1 afterward.
+
+        Example:
+        try {
+          const response = await fetch('https://your-backend-host/api/llm/answer', {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              question: inputMessage,
+            }),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            inputMessage = result.answer;
+          } else {
+            console.error("Failed to fetch from backend", response.statusText);
+          }
+        } catch (error) {
+          console.error("Error during fetch operation", error);
+        }
+      */
 
       socket.send(
         JSON.stringify({
@@ -235,6 +260,8 @@ function App() {
             voice_id: voiceId,
             voice_url: "",
             language: language,
+            // Mode type 1: Repeat mode, where the avatar repeats exactly what is sent to it.
+            // Mode type 2: Akool LLM mode, where Akool generates responses based on the question provided.
             mode_type: 2,
             prompt: { from: "url", content: "" },
             question: inputMessage,
@@ -383,7 +410,8 @@ function App() {
             <input
               type="text"
               placeholder={
-                "Type a message... WebSocket: " + (connected ? "Connected" : "Disconnected")
+                "Type a message... WebSocket: " +
+                (connected ? "Connected" : "Disconnected")
               }
               disabled={sending}
               value={inputMessage}
