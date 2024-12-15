@@ -1,4 +1,4 @@
-# Quick demo for Streaming avatar Demo in Web
+# Quick Demo for Akool Streaming Avatar Demo in Web
 
 ## Setup
 
