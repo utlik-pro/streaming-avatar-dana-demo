@@ -26,7 +26,7 @@ A React-based demo application for integrating with Akool's Streaming Avatar ser
 
 ```bash
 git clone https://github.com/AKOOL-Official/akool-streaming-avatar-react-demo
-cd streaming-avatar-react-demo
+cd akool-streaming-avatar-react-demo
 ```
 
 The application will be available at `http://localhost:5173/streaming/avatar`
