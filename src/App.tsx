@@ -1,328 +1,405 @@
-import { useState } from "react";
-import "./App.css";
-import AgoraRTC, {
-  IAgoraRTCClient,
-  IAgoraRTCRemoteUser,
-} from "agora-rtc-sdk-ng";
+import { useState, useRef, useEffect } from 'react';
+import './App.css';
+import AgoraRTC, { IAgoraRTCRemoteUser, IMicrophoneAudioTrack, NetworkQuality } from 'agora-rtc-sdk-ng';
+import { UID } from 'agora-rtc-sdk-ng/esm';
+import { Session, ApiService, Language, Voice, Avatar, Credentials } from './apiService';
+import NetworkQualityDisplay, { NetworkStats } from './components/NetworkQuality';
+import {
+  RTCClient,
+  sendMessageToAvatar,
+  setAvatarParams,
+  interruptResponse,
+  log,
+  StreamMessage,
+  ChatResponsePayload,
+  CommandResponsePayload,
+} from './agoraHelper';
 
-const client: IAgoraRTCClient = AgoraRTC.createClient({
-  mode: "rtc",
-  codec: "vp8",
-});
+const client: RTCClient = AgoraRTC.createClient({
+  mode: 'rtc',
+  codec: 'vp8',
+}) as RTCClient;
+
+let audioTrack: IMicrophoneAudioTrack | null;
+
+// let uid: UID = 0;
 
 function App() {
-  const [isVideoSubed, setIsVideoSubed] = useState(false);
-  const [resolution, setResolution] = useState<{
-    width: number;
-    height: number;
-  }>({ width: 1080, height: 720 });
-
-  const updateResolution = async (width: number, height: number) => {
-    console.log("updateResolution", width, height);
-    setResolution({ width, height });
-  };
-
   const [isJoined, setIsJoined] = useState(false);
 
-  const joinChannel = async (
-    appid: string,
-    channel: string,
-    token: string,
-    uid: number
-  ) => {
-    if (!channel) {
-      channel = "react-room";
-    }
+  const joinChannel = async (credentials: Credentials) => {
+    const { agora_app_id, agora_channel, agora_token, agora_uid } = credentials;
 
     if (isJoined) {
       await leaveChannel();
     }
 
-    client.on("user-published", onUserPublish);
-    client.on("exception", console.log);
+    client.on('exception', onException);
+    client.on('user-published', onUserPublish);
+    client.on('user-unpublished', onUserUnpublish);
+    client.on('token-privilege-will-expire', onTokenWillExpire);
+    client.on('token-privilege-did-expire', onTokenDidExpire);
 
-    await client.join(appid, channel, token || null, uid || null);
+    await client.join(agora_app_id, agora_channel, agora_token, agora_uid);
+
+    client.on('network-quality', (stats: NetworkQuality) => {
+      // Update remote stats
+      const videoStats = client.getRemoteVideoStats();
+      const audioStats = client.getRemoteAudioStats();
+      const networkStats = client.getRemoteNetworkQuality();
+
+      // Get the first remote user's stats
+      const firstVideoStats = Object.values(videoStats)[0] || {};
+      const firstAudioStats = Object.values(audioStats)[0] || {};
+      const firstNetworkStats = Object.values(networkStats)[0] || {};
+
+      setRemoteStats({
+        localNetwork: stats,
+        remoteNetwork: firstNetworkStats,
+        video: firstVideoStats,
+        audio: firstAudioStats,
+      });
+    });
 
     setIsJoined(true);
+  };
+
+  const onException = (e: { code: number; msg: string; uid: UID }) => {
+    log(e);
+  };
+
+  const onTokenWillExpire = () => {
+    alert('Session will expire in 30s');
+  };
+
+  const onTokenDidExpire = () => {
+    alert('Session expired');
+    closeStreaming();
   };
 
   const leaveChannel = async () => {
     setIsJoined(false);
 
+    if (audioTrack) {
+      await client.unpublish(audioTrack);
+      audioTrack = null;
+    }
+
+    await client.unpublish();
     await client.leave();
+
+    client.removeAllListeners('network-quality');
+    client.removeAllListeners('exception');
+    client.removeAllListeners('user-published');
+    client.removeAllListeners('user-unpublished');
+    client.removeAllListeners('token-privilege-will-expire');
+    client.removeAllListeners('token-privilege-did-expire');
   };
 
-  const onUserPublish = async (
-    user: IAgoraRTCRemoteUser,
-    mediaType: "video" | "audio"
-  ) => {
-    console.log("onUserPublish", user, mediaType);
-    if (mediaType === "video") {
+  const onUserPublish = async (user: IAgoraRTCRemoteUser, mediaType: 'video' | 'audio' | 'datachannel') => {
+    log('onUserPublish', user, mediaType);
+    if (mediaType === 'video') {
       const remoteTrack = await client.subscribe(user, mediaType);
-      remoteTrack.play("remote-video");
-      setIsVideoSubed(true);
-    }
-    if (mediaType === "audio") {
+      remoteTrack.play('remote-video');
+    } else if (mediaType === 'audio') {
       const remoteTrack = await client.subscribe(user, mediaType);
       remoteTrack.play();
     }
   };
 
-  const [messages, setMessages] = useState<
-    { text: string; isSentByMe: boolean }[]
-  >([]);
-  const [inputMessage, setInputMessage] = useState("");
-  const [socket, setSocket] = useState<WebSocket | null>(null);
-  const [sending, setSending] = useState(false);
-  const [connected, setConnected] = useState(false);
-
-  const [language, setLanguage] = useState("en");
-  const [voiceId, setVoiceId] = useState("Xb7hH8MSUJpSbSDYk0k2");
-
-  const [openapiHost, setOpenapiHost] = useState("https://openapi.akool.com");
-  const [avatarId, setAvatarId] = useState("Olivia_1080P_back");
-  const [openapiToken, setOpenapiToken] = useState("");
-
-  const createSession = async (avatar_id: string) => {
-    const response = await fetch(
-      `${openapiHost}/api/open/v3/liveAvatar/session/create`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${openapiToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          stream_type: "agora",
-          avatar_id,
-        }),
-      }
-    );
-    const body = await response.json();
-    if (body.code != 1000) {
-      alert(body.msg);
-      throw new Error(body.msg);
-    }
-    return body.data;
+  const onUserUnpublish = async (user: IAgoraRTCRemoteUser, mediaType: 'video' | 'audio' | 'datachannel') => {
+    log('onUserUnpublish', user, mediaType);
+    await client.unsubscribe(user, mediaType);
   };
 
-  const closeSession = async (id: string) => {
-    const response = await fetch(
-      `${openapiHost}/api/open/v3/liveAvatar/session/close`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${openapiToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id,
-        }),
-      }
-    );
-    const body = await response.json();
-    if (body.code != 1000) {
-      alert(body.msg);
-      throw new Error(body.msg);
-    }
-    return body.data;
-  };
-
-  interface Session {
-    _id: string;
-    uid: number;
-    stream_urls: {
-      agora_app_id: string;
-      agora_channel: string;
-      agora_token: string;
-      client_chat_room_url: string;
-      server_chat_room_url: string;
-    };
+  interface Message {
+    id: string;
+    text: string;
+    isSentByMe: boolean;
   }
 
+  const [messageMap, setMessageMap] = useState<Map<string, Message>>(new Map());
+  const [messageIds, setMessageIds] = useState<string[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const [micEnabled, setMicEnabled] = useState(false);
+
+  const [modeType, setModeType] = useState(2);
+  const [language, setLanguage] = useState('en');
+  const [voiceId, setVoiceId] = useState('Xb7hH8MSUJpSbSDYk0k2');
+
+  const [openapiHost, setOpenapiHost] = useState('https://openapi.akool.com');
+  const [avatarId, setAvatarId] = useState('dvp_Tristan_cloth2_1080P');
+  const [avatarVideoUrl, setAvatarVideoUrl] = useState(
+    'https://static.website-files.org/assets/avatar/avatar/streaming_avatar/tristan_10s_silence.mp4',
+  );
+  const [openapiToken, setOpenapiToken] = useState('');
+
   const [session, setSession] = useState<Session | null>(null);
-  const [messageSendTo, setMessageSendTo] = useState("");
+  const [api, setApi] = useState<ApiService | null>();
+
+  useEffect(() => {
+    if (openapiHost && openapiToken) {
+      const apiService = new ApiService(openapiHost, openapiToken);
+      setApi(apiService);
+    } else {
+      setApi(null);
+    }
+  }, [openapiHost, openapiToken]);
+
+  const [languages, setLanguages] = useState<Language[]>([]);
+  const [voices, setVoices] = useState<Voice[]>([]);
+  const [avatars, setAvatars] = useState<Avatar[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!api) {
+        return;
+      }
+      try {
+        const [langList, voiceList, avatarList] = await Promise.all([
+          api.getLangList(),
+          api.getVoiceList(),
+          api.getAvatarList(),
+        ]);
+        setLanguages(langList);
+        setVoices(voiceList);
+        setAvatars(avatarList);
+      } catch (error) {
+        console.error('Error fetching language and voice data:', error);
+      }
+    };
+
+    fetchData();
+  }, [api]);
+
+  useEffect(() => {
+    if (connected) {
+      setAvatarParams(client, {
+        vid: voiceId,
+        lang: language,
+        mode: modeType,
+      }).catch((error) => {
+        console.error('Failed to update avatar params:', error);
+      });
+    }
+  }, [connected, language, voiceId, modeType]);
+
+  useEffect(() => {
+    if (avatarId) {
+      const avatar = avatars.find((a) => a.avatar_id === avatarId);
+      if (avatar) {
+        log('update avatar video url', avatar.url);
+        setAvatarVideoUrl(avatar.url);
+      }
+    }
+  }, [avatarId, avatars]);
+
+  const [sessionDuration, setSessionDuration] = useState(10);
+
   const startStreaming = async () => {
-    const data = await createSession(avatarId);
-    console.log(data);
+    if (!api) {
+      alert('Please set host and token first');
+      return;
+    }
+
+    const data = await api.createSession({
+      avatar_id: avatarId,
+      duration: sessionDuration * 60,
+    });
+    log(data);
     setSession(data);
 
-    const { uid, stream_urls } = data;
-    const {
-      agora_app_id,
-      agora_channel,
-      agora_token,
-      client_chat_room_url,
-      server_chat_room_url,
-    } = stream_urls;
+    const { credentials } = data;
 
-    const parts = server_chat_room_url.split("/");
-    const sendTo = parts[parts.length - 1].split(".")[0];
-
-    setMessageSendTo(sendTo);
-
-    await joinChannel(agora_app_id, agora_channel, agora_token, uid);
-    joinChat(client_chat_room_url);
+    await joinChannel(credentials);
+    await joinChat();
   };
 
   const closeStreaming = async () => {
-    leaveChat();
+    await leaveChat();
     await leaveChannel();
     if (!session) {
-      console.log("session not found");
+      log('session not found');
       return;
     }
-    await closeSession(session._id);
+    await api?.closeSession(session._id);
   };
 
-  const joinChat = (chatUrl: string) => {
-    if (socket) {
-      socket.close();
-      setSocket(null);
+  const joinChat = async () => {
+    client.on('stream-message', onStreamMessage);
+
+    setConnected(true);
+
+    await setAvatarParams(client, {
+      vid: voiceId,
+      lang: language,
+      mode: modeType,
+    });
+  };
+
+  const leaveChat = async () => {
+    client.removeAllListeners('stream-message');
+
+    setMicEnabled(false);
+    setConnected(false);
+    setMessageIds([]);
+    setMessageMap(new Map());
+  };
+
+  const onStreamMessage = (uid: UID, body: Uint8Array) => {
+    const msg = new TextDecoder().decode(body);
+    log(`stream-message, uid=${uid}, size=${body.length}, msg=${msg}`);
+    const { v, type, mid, pld } = JSON.parse(msg) as StreamMessage;
+    if (v !== 2) {
+      log(`unsupported message version, v=${v}`);
+      return;
     }
-
-    console.log("Start to connect WebSocket", chatUrl);
-    const ws = new WebSocket(chatUrl);
-
-    ws.onopen = () => {
-      console.log("WebSocket connected");
-      setConnected(true);
-    };
-
-    ws.onmessage = (event) => {
-      const message = event.data;
-      const { type, /*from, to,*/ payload } = JSON.parse(message);
-      if (type === "chat") {
-        const { answer } = JSON.parse(payload);
-
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          { text: answer, isSentByMe: false },
-        ]);
+    if (type === 'chat') {
+      const { text, from } = pld as ChatResponsePayload;
+      setMessageMap((prev) => {
+        const msg_id = `${type}_${mid}`;
+        const newMap = new Map(prev);
+        if (!newMap.has(msg_id)) {
+          const msg = {
+            id: msg_id,
+            text,
+            isSentByMe: from === 'user',
+          };
+          newMap.set(msg_id, msg);
+          setMessageIds((prevMessages) => {
+            if (!prevMessages.includes(msg_id)) {
+              return [...prevMessages, msg_id];
+            }
+            return prevMessages;
+          });
+        } else {
+          const msg = newMap.get(msg_id);
+          if (msg) {
+            msg.text += text;
+            newMap.set(msg_id, msg);
+          }
+        }
+        return newMap;
+      });
+    } else if (type === 'cmd') {
+      const { cmd, code, msg } = pld as CommandResponsePayload;
+      log(`cmd-response, cmd=${cmd}, code=${code}, msg=${msg}`);
+      if (code !== 1000) {
+        alert(`cmd-response, cmd=${cmd}, code=${code}, msg=${msg}`);
       }
-    };
-
-    ws.onclose = () => {
-      console.log("WebSocket disconnected");
-      setSocket(null);
-      setConnected(false);
-    };
-
-    setSocket(ws);
-  };
-
-  const leaveChat = () => {
-    socket?.close();
+    }
   };
 
   const sendMessage = async () => {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      setSending(true);
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { text: inputMessage, isSentByMe: true },
-      ]);
+    setSending(true);
 
-      /*
-        If you need to utilize your own LLM service, perform an HTTP request here.
-        Send the "inputMessage" to your backend and retrieve the response.
-        Ensure to update "mode_type" to 1 afterward.
+    const messageId = `msg-${Date.now()}`;
+    const msg = {
+      id: messageId,
+      text: inputMessage,
+      isSentByMe: true,
+    };
 
-        Example:
-        try {
-          const response = await fetch('https://your-backend-host/api/llm/answer', {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              question: inputMessage,
-            }),
-          });
+    setMessageIds((prevMessages) => [...prevMessages, msg.id]);
+    setMessageMap((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(messageId, msg);
+      return newMap;
+    });
 
-          if (response.ok) {
-            const result = await response.json();
-            inputMessage = result.answer;
-          } else {
-            console.error("Failed to fetch from backend", response.statusText);
-          }
-        } catch (error) {
-          console.error("Error during fetch operation", error);
-        }
-      */
+    /*
+      If you need to utilize your own LLM service, perform an HTTP request here.
+      Send the "inputMessage" to your backend and retrieve the response.
 
-      socket.send(
-        JSON.stringify({
-          type: "chat",
-          to: messageSendTo,
-          payload: JSON.stringify({
-            message_id: `msg-${Date.now()}`,
-            voice_id: voiceId,
-            voice_url: "",
-            language: language,
-            // Mode type 1: Repeat mode, where the avatar repeats exactly what is sent to it.
-            // Mode type 2: Akool LLM mode, where Akool generates responses based on the question provided.
-            mode_type: 2,
-            prompt: { from: "url", content: "" },
+      Example:
+      
+      // Set mode to 1 to repeat mode, and you only need to do this once.
+      setAvatarParams(client, {
+        mode: 1,
+      });
+
+      try {
+        const response = await fetch('https://your-backend-host/api/llm/answer', {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
             question: inputMessage,
           }),
-        })
-      );
+        });
 
-      setInputMessage("");
-      setSending(false);
+        if (response.ok) {
+          const result = await response.json();
+          inputMessage = result.answer;
+        } else {
+          console.error("Failed to fetch from backend", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error during fetch operation", error);
+      }
+    */
+
+    await sendMessageToAvatar(client, messageId, inputMessage);
+
+    setInputMessage('');
+    setSending(false);
+  };
+
+  const toggleMic = async () => {
+    if (!audioTrack) {
+      audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
+        encoderConfig: 'speech_low_quality',
+        AEC: true,
+        ANS: true,
+        AGC: true,
+      });
+      await client.publish(audioTrack);
+      setMicEnabled(true);
     } else {
-      console.error("WebSocket is not open");
+      audioTrack.stop();
+      audioTrack.close();
+      await client.unpublish(audioTrack);
+      audioTrack = null;
+      setMicEnabled(false);
     }
+    log(`Microphone is now ${audioTrack ? 'enabled' : 'disabled'}`);
+  };
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messageIds, messageMap]);
+
+  const [remoteStats, setRemoteStats] = useState<NetworkStats | null>(null);
+
+  const [useManualAvatarId, setUseManualAvatarId] = useState(false);
+
+  const isImageUrl = (url: string) => {
+    return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
   };
 
   return (
     <>
       <div className="left-side">
-        <h3>Video Resolution</h3>
-        <div>
-          <label>
-            Width:
-            <input
-              type="number"
-              defaultValue={resolution.width}
-              onChange={(e) => (resolution.width = Number(e.target.value))}
-            />
-          </label>
-          <label>
-            Height:
-            <input
-              type="number"
-              defaultValue={resolution.height}
-              onChange={(e) => (resolution.height = Number(e.target.value))}
-            />
-          </label>
-        </div>
-        <div>
-          <button
-            onClick={() =>
-              updateResolution(resolution.width, resolution.height)
-            }
-          >
-            Update Resolution
-          </button>
-        </div>
-        <h3>Streaming</h3>
+        <h3>Streaming Avatar Demo</h3>
         <div>
           <label>
             Host:
-            <input
-              style={{ width: "50%" }}
-              defaultValue={openapiHost}
-              onChange={(e) => setOpenapiHost(e.target.value)}
-            />
+            <input defaultValue={openapiHost} onChange={(e) => setOpenapiHost(e.target.value)} />
           </label>
         </div>
         <div>
           <label>
             Token:
             <input
-              style={{ width: "50%" }}
               defaultValue={openapiToken}
               onChange={(e) => setOpenapiToken(e.target.value)}
               placeholder="get your token from https://akool.com"
@@ -331,96 +408,168 @@ function App() {
         </div>
         <div>
           <label>
-            AvatarId:
+            Session Duration (minutes):
             <input
-              defaultValue={avatarId}
-              onChange={(e) => setAvatarId(e.target.value)}
+              type="number"
+              min="1"
+              max="60"
+              value={sessionDuration}
+              onChange={(e) => setSessionDuration(Math.max(1, parseInt(e.target.value) || 1))}
             />
           </label>
         </div>
-        <h3>Chat</h3>
+        <div>
+          <label>
+            ModeType:
+            <select value={modeType} onChange={(e) => setModeType(parseInt(e.target.value))}>
+              <option value="1">Repeat</option>
+              <option value="2">Dialogue</option>
+            </select>
+          </label>
+        </div>
+        <div>
+          <label>
+            Avatar:
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {!useManualAvatarId ? (
+                <select value={avatarId} onChange={(e) => setAvatarId(e.target.value)} disabled={!avatars.length}>
+                  <option value="">Select an avatar</option>
+                  {avatars.map((avatar, index) => (
+                    <option key={index} value={avatar.avatar_id}>
+                      {avatar.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={avatarId}
+                  onChange={(e) => setAvatarId(e.target.value)}
+                  placeholder="Enter avatar ID"
+                />
+              )}
+              <button
+                onClick={() => setUseManualAvatarId(!useManualAvatarId)}
+                className="icon-button"
+                title={useManualAvatarId ? 'Switch to dropdown' : 'Switch to manual input'}
+              >
+                <span className="material-icons">{useManualAvatarId ? 'list' : 'edit'}</span>
+              </button>
+            </div>
+          </label>
+        </div>
         <div>
           <label>
             Language:
-            <input
-              defaultValue={language}
-              onChange={(e) => setLanguage(e.target.value)}
-            />
+            <select value={language} onChange={(e) => setLanguage(e.target.value)} disabled={!languages.length}>
+              <option value="">Select a language</option>
+              {languages.map((lang) => (
+                <option key={lang.lang_code} value={lang.lang_code}>
+                  {lang.lang_name}
+                </option>
+              ))}
+            </select>
           </label>
+        </div>
+        <div>
           <label>
             Voice:
-            <input
-              defaultValue={voiceId}
-              onChange={(e) => setVoiceId(e.target.value)}
-            />
+            <select value={voiceId} onChange={(e) => setVoiceId(e.target.value)} disabled={!voices.length}>
+              <option value="">Select a voice</option>
+              {voices.map((voice, index) => (
+                <option key={index} value={voice.voice_id}>
+                  {voice.name}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
         <div className="buttons">
-          <button
-            onClick={startStreaming}
-            className={isJoined ? "button-on" : ""}
-          >
-            Start Streaming
-          </button>
-          <button onClick={closeStreaming}>Close Streaming</button>
+          {isJoined ? (
+            <button onClick={closeStreaming} className="button-off">
+              Close Streaming
+            </button>
+          ) : (
+            <button onClick={startStreaming} className="button-on">
+              Start Streaming
+            </button>
+          )}
         </div>
+        <div>{isJoined && remoteStats && <NetworkQualityDisplay stats={remoteStats} />}</div>
       </div>
       <div className="right-side">
-        <video
-          id="placeholder-video"
-          hidden={isVideoSubed}
-          src="https://static.website-files.org/assets/videos/avatar/live/Alina_loop-1.mp4"
-          loop
-          muted
-          playsInline
-          autoPlay
-          style={{
-            width: `${resolution.width}px`,
-            height: `${resolution.height}px`,
-          }}
-        ></video>
-        <video
-          id="remote-video"
-          hidden={isVideoSubed ? false : true}
-          style={{
-            width: `${resolution.width}px`,
-            height: `${resolution.height}px`,
-          }}
-        ></video>
-        <div
-          className="chat-window"
-          style={{
-            width: `${resolution.width}px`,
-            height: `${resolution.height}px`,
-          }}
-        >
+        <div className="video-container">
+          {isImageUrl(avatarVideoUrl) ? (
+            <img
+              id="placeholder-image"
+              hidden={isJoined}
+              src={avatarVideoUrl}
+              alt="Avatar placeholder"
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            />
+          ) : (
+            <video
+              id="placeholder-video"
+              hidden={isJoined}
+              src={avatarVideoUrl}
+              loop
+              muted
+              playsInline
+              autoPlay
+            ></video>
+          )}
+          <video id="remote-video"></video>
+        </div>
+        <div className="chat-window">
           <div className="chat-messages">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`chat-message ${
-                  message.isSentByMe ? "sent" : "received"
-                }`}
-              >
-                {message.text}
-              </div>
-            ))}
+            {messageIds.map((id: string, index: number) => {
+              const message = messageMap.get(id)!;
+              return (
+                <div key={index} className={`chat-message ${message.isSentByMe ? 'sent' : 'received'}`}>
+                  {message.text}
+                </div>
+              );
+            })}
+            <div ref={messagesEndRef} />
           </div>
           <div className="chat-input">
-            <input
-              type="text"
-              placeholder={
-                "Type a message... WebSocket: " +
-                (connected ? "Connected" : "Disconnected")
-              }
-              disabled={sending}
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyUp={(e) => e.key === "Enter" && sendMessage()}
-            />
-            <button onClick={sendMessage} disabled={sending}>
-              Send
+            <button
+              onClick={toggleMic}
+              disabled={sending || !connected}
+              className={`icon-button ${sending || !connected ? 'disabled' : ''}`}
+              title={micEnabled ? 'Disable microphone' : 'Enable microphone'}
+            >
+              <span className="material-icons">{micEnabled ? 'mic' : 'mic_off'}</span>
             </button>
+            {!micEnabled && (
+              <>
+                <input
+                  type="text"
+                  placeholder={'Type a message...'}
+                  disabled={sending || !connected}
+                  className={sending || !connected ? 'disabled' : ''}
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyUp={(e) => e.key === 'Enter' && sendMessage()}
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={sending || !connected}
+                  className={`icon-button ${sending || !connected ? 'disabled' : ''}`}
+                  title="Send message"
+                >
+                  <span className="material-icons">send</span>
+                </button>
+                <button
+                  onClick={() => interruptResponse(client)}
+                  disabled={sending || !connected}
+                  className={`icon-button ${sending || !connected ? 'disabled' : ''}`}
+                  title="Interrupt response"
+                >
+                  <span className="material-icons">stop</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
