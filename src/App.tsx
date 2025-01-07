@@ -389,7 +389,7 @@ function App() {
   return (
     <>
       <div className="left-side">
-        <h3>Streaming Avatar Demo</h3>
+        <h3>AKool Streaming Avatar Demo</h3>
         <div>
           <label>
             Host:
