@@ -29,8 +29,6 @@ git clone https://github.com/AKOOL-Official/akool-streaming-avatar-react-demo
 cd akool-streaming-avatar-react-demo
 ```
 
-The application will be available at `http://localhost:5173/streaming/avatar`
-
 2. Install dependencies:
 
 ```bash
@@ -38,13 +36,13 @@ npm install -g yarn
 yarn install
 ```
 
-3. Create a configuration file with your API credentials (if required)
+3. Start the development server:
 
 ```bash
 yarn dev
 ```
 
-The application will be available at `http://localhost:5173`
+The application will be available at `http://localhost:5173/streaming/avatar`
 
 ## Building for Production
 
