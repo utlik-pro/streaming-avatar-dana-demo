@@ -436,7 +436,7 @@ function App() {
                   <option value="">Select an avatar</option>
                   {avatars.map((avatar, index) => (
                     <option key={index} value={avatar.avatar_id}>
-                      {avatar.name}
+                      {avatar.name} {avatar.from === 3 && '(generic)'}
                     </option>
                   ))}
                 </select>

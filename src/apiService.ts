@@ -35,6 +35,7 @@ export type Language = {
 
 export type Avatar = {
   name: string;
+  from: number;
   gender: string;
   url: string;
   avatar_id: string;
