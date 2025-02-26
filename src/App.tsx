@@ -128,6 +128,8 @@ function App() {
   const [modeType, setModeType] = useState(2);
   const [language, setLanguage] = useState('en');
   const [voiceId, setVoiceId] = useState('Xb7hH8MSUJpSbSDYk0k2');
+  const [backgroundUrl, setBackgroundUrl] = useState('');
+  const [voiceUrl, setVoiceUrl] = useState('');
 
   const [openapiHost, setOpenapiHost] = useState('https://openapi.akool.com');
   const [avatarId, setAvatarId] = useState('dvp_Tristan_cloth2_1080P');
@@ -180,11 +182,13 @@ function App() {
         vid: voiceId,
         lang: language,
         mode: modeType,
+        bgurl: backgroundUrl,
+        vurl: voiceUrl,
       }).catch((error) => {
         console.error('Failed to update avatar params:', error);
       });
     }
-  }, [connected, language, voiceId, modeType]);
+  }, [connected, language, voiceId, modeType, backgroundUrl, voiceUrl]);
 
   useEffect(() => {
     if (avatarId) {
@@ -501,6 +505,28 @@ function App() {
                 <span className="material-icons">{useManualVoiceId ? 'list' : 'edit'}</span>
               </button>
             </div>
+          </label>
+        </div>
+        <div>
+          <label>
+            Voice URL:
+            <input
+              type="text"
+              value={voiceUrl}
+              onChange={(e) => setVoiceUrl(e.target.value)}
+              placeholder="Enter voice URL"
+            />
+          </label>
+        </div>
+        <div>
+          <label>
+            Background URL:
+            <input
+              type="text"
+              value={backgroundUrl}
+              onChange={(e) => setBackgroundUrl(e.target.value)}
+              placeholder="Enter background image/video URL"
+            />
           </label>
         </div>
         <div className="buttons">
