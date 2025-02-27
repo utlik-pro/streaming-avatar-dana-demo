@@ -391,6 +391,27 @@ function App() {
     return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
   };
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshCooldown, setRefreshCooldown] = useState(false);
+
+  const refreshAvatarList = async () => {
+    if (!api || isRefreshing || refreshCooldown) return;
+    
+    setIsRefreshing(true);
+    try {
+      const avatarList = await api.getAvatarList();
+      setAvatars(avatarList);
+      
+      // Set cooldown
+      setRefreshCooldown(true);
+      setTimeout(() => setRefreshCooldown(false), 5000); // 5 second cooldown
+    } catch (error) {
+      console.error('Error refreshing avatar list:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   return (
     <>
       <div className="left-side">
@@ -437,14 +458,50 @@ function App() {
             Avatar:
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               {!useManualAvatarId ? (
-                <select value={avatarId} onChange={(e) => setAvatarId(e.target.value)} disabled={!avatars.length}>
-                  <option value="">Select an avatar</option>
-                  {avatars.map((avatar, index) => (
-                    <option key={index} value={avatar.avatar_id}>
-                      {avatar.name} {avatar.from === 3 && '(generic)'}
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <select
+                    value={avatarId}
+                    onChange={(e) => setAvatarId(e.target.value)}
+                    disabled={!avatars.length}
+                    className="avatar-select"
+                  >
+                    <option value="">Select an avatar</option>
+                    <optgroup label="Official Avatars">
+                      {avatars
+                        .filter((avatar) => avatar.from !== 3)
+                        .map((avatar, index) => (
+                          <option
+                            key={index}
+                            value={avatar.avatar_id}
+                            className={avatar.status === 'available' ? 'available' : 'unavailable'}
+                          >
+                            {avatar.status === 'available' ? '🟢' : '🔴'} {avatar.name}
+                          </option>
+                        ))}
+                    </optgroup>
+                    <optgroup label="Generic Avatars">
+                      {avatars
+                        .filter((avatar) => avatar.from === 3)
+                        .map((avatar, index) => (
+                          <option
+                            key={index}
+                            value={avatar.avatar_id}
+                            className={avatar.status === 'available' ? 'available' : 'unavailable'}
+                          >
+                            {avatar.status === 'available' ? '🟢' : '🔴'} {avatar.name}
+                          </option>
+                        ))}
+                    </optgroup>
+                  </select>
+                  <button
+                    onClick={refreshAvatarList}
+                    disabled={isRefreshing || refreshCooldown}
+                    className={`icon-button ${(isRefreshing || refreshCooldown) ? 'disabled' : ''}`}
+                    title={refreshCooldown ? 'Please wait before refreshing again' : 'Refresh avatar list'}
+                  >
+                    <span className={`material-icons ${isRefreshing ? 'spinning' : ''}`}>refresh</span>
+                  </button>
+                </>
               ) : (
                 <input
                   type="text"

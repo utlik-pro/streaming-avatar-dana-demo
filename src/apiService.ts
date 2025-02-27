@@ -41,6 +41,7 @@ export type Avatar = {
   avatar_id: string;
   voice_id: string;
   thumbnailUrl: string;
+  status: string;
 };
 
 export class ApiService {
@@ -92,7 +93,7 @@ export class ApiService {
   }
 
   public async getAvatarList(): Promise<Avatar[]> {
-    const data = await this.fetchApi("/api/open/v3/avatar/list", "GET");
+    const data = await this.fetchApi("/api/open/v4/liveAvatar/avatar/list?page=1&size=100", "GET");
     return data?.result;
   }
 }
