@@ -479,7 +479,7 @@ function App() {
                           </option>
                         ))}
                     </optgroup>
-                    <optgroup label="Generic Avatars">
+                    <optgroup label="Custom Avatars">
                       {avatars
                         .filter((avatar) => avatar.from === 3)
                         .map((avatar, index) => (
