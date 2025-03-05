@@ -41,7 +41,7 @@ export type Avatar = {
   avatar_id: string;
   voice_id: string;
   thumbnailUrl: string;
-  status: string;
+  available: boolean;
 };
 
 export class ApiService {

@@ -396,12 +396,12 @@ function App() {
 
   const refreshAvatarList = async () => {
     if (!api || isRefreshing || refreshCooldown) return;
-    
+
     setIsRefreshing(true);
     try {
       const avatarList = await api.getAvatarList();
       setAvatars(avatarList);
-      
+
       // Set cooldown
       setRefreshCooldown(true);
       setTimeout(() => setRefreshCooldown(false), 5000); // 5 second cooldown
@@ -473,9 +473,9 @@ function App() {
                           <option
                             key={index}
                             value={avatar.avatar_id}
-                            className={avatar.status === 'available' ? 'available' : 'unavailable'}
+                            className={avatar.available ? 'available' : 'unavailable'}
                           >
-                            {avatar.status === 'available' ? '🟢' : '🔴'} {avatar.name}
+                            {avatar.available ? '🟢' : '🔴'} {avatar.name}
                           </option>
                         ))}
                     </optgroup>
@@ -486,9 +486,9 @@ function App() {
                           <option
                             key={index}
                             value={avatar.avatar_id}
-                            className={avatar.status === 'available' ? 'available' : 'unavailable'}
+                            className={avatar.available ? 'available' : 'unavailable'}
                           >
-                            {avatar.status === 'available' ? '🟢' : '🔴'} {avatar.name}
+                            {avatar.available ? '🟢' : '🔴'} {avatar.name}
                           </option>
                         ))}
                     </optgroup>
@@ -496,7 +496,7 @@ function App() {
                   <button
                     onClick={refreshAvatarList}
                     disabled={isRefreshing || refreshCooldown}
-                    className={`icon-button ${(isRefreshing || refreshCooldown) ? 'disabled' : ''}`}
+                    className={`icon-button ${isRefreshing || refreshCooldown ? 'disabled' : ''}`}
                     title={refreshCooldown ? 'Please wait before refreshing again' : 'Refresh avatar list'}
                   >
                     <span className={`material-icons ${isRefreshing ? 'spinning' : ''}`}>refresh</span>
