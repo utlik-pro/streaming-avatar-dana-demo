@@ -76,7 +76,7 @@ const NetworkQualityDisplay = ({ stats }: NetworkQualityProps) => {
         .map((point, idx) => ({ ...point, index: idx + 1 }));
       return filteredData;
     });
-  }, [stats, latencyData]);
+  }, [stats]);
 
   const chartData = {
     labels: latencyData.map((d) => d.index),
