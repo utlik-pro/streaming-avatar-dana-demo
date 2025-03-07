@@ -58,6 +58,7 @@ export default function ConfigurationPanel({
   const [languages, setLanguages] = useState<Language[]>([]);
   const [voices, setVoices] = useState<Voice[]>([]);
   const [avatars, setAvatars] = useState<Avatar[]>([]);
+  const [isStarting, setIsStarting] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -78,6 +79,17 @@ export default function ConfigurationPanel({
 
     fetchData();
   }, [api]);
+
+  const handleStartStreaming = async () => {
+    setIsStarting(true);
+    try {
+      await startStreaming();
+    } catch (error) {
+      console.error('Error starting streaming:', error);
+    } finally {
+      setIsStarting(false);
+    }
+  };
 
   return (
     <div className="left-side">
@@ -160,8 +172,8 @@ export default function ConfigurationPanel({
             Close Streaming
           </button>
         ) : (
-          <button onClick={startStreaming} className="button-on">
-            Start Streaming
+          <button onClick={handleStartStreaming} className="button-on" disabled={isStarting}>
+            {isStarting ? 'Requesting...' : 'Start Streaming'}
           </button>
         )}
       </div>
