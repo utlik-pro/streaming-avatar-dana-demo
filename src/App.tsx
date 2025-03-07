@@ -4,8 +4,6 @@ import AgoraRTC, { IAgoraRTCRemoteUser, IMicrophoneAudioTrack, NetworkQuality } 
 import { UID } from 'agora-rtc-sdk-ng/esm';
 import { Session, ApiService, Credentials } from './apiService';
 
-import ConfigurationPanel from './components/ConfigurationPanel';
-import NetworkQualityDisplay, { NetworkStats } from './components/NetworkQuality';
 import {
   RTCClient,
   sendMessageToAvatar,
@@ -16,6 +14,10 @@ import {
   ChatResponsePayload,
   CommandResponsePayload,
 } from './agoraHelper';
+
+import ConfigurationPanel from './components/ConfigurationPanel';
+import NetworkQualityDisplay, { NetworkStats } from './components/NetworkQuality';
+import VideoDisplay from './components/VideoDisplay';
 
 const client: RTCClient = AgoraRTC.createClient({
   mode: 'rtc',
@@ -350,10 +352,6 @@ function App() {
 
   const [remoteStats, setRemoteStats] = useState<NetworkStats | null>(null);
 
-  const isImageUrl = (url: string) => {
-    return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
-  };
-
   return (
     <>
       <ConfigurationPanel
@@ -382,28 +380,7 @@ function App() {
         setAvatarVideoUrl={setAvatarVideoUrl}
       />
       <div className="right-side">
-        <div className="video-container">
-          {isImageUrl(avatarVideoUrl) ? (
-            <img
-              id="placeholder-image"
-              hidden={isJoined}
-              src={avatarVideoUrl}
-              alt="Avatar placeholder"
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-            />
-          ) : (
-            <video
-              id="placeholder-video"
-              hidden={isJoined}
-              src={avatarVideoUrl}
-              loop
-              muted
-              playsInline
-              autoPlay
-            ></video>
-          )}
-          <video id="remote-video"></video>
-        </div>
+        <VideoDisplay isJoined={isJoined} avatarVideoUrl={avatarVideoUrl} />
         <div className="chat-window">
           <div className="chat-messages">
             {messageIds.map((id: string, index: number) => {
