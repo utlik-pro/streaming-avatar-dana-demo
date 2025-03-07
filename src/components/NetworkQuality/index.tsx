@@ -11,7 +11,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import './NetworkQuality.css';
+import './index.css';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -76,7 +76,7 @@ const NetworkQualityDisplay = ({ stats }: NetworkQualityProps) => {
         .map((point, idx) => ({ ...point, index: idx + 1 }));
       return filteredData;
     });
-  }, [stats]);
+  }, [stats, latencyData]);
 
   const chartData = {
     labels: latencyData.map((d) => d.index),

@@ -1,0 +1,117 @@
+/* Left side panel */
+.left-side {
+    flex: 0 0 420px;
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: fit-content;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+  }
+  
+  .left-side h3 {
+    margin: 0 0 16px 0;
+    color: #1a1a1a;
+    font-size: 24px;
+    font-weight: 600;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 12px;
+  }
+
+/* Form controls */
+.left-side label {
+  display: block;
+  margin-bottom: 8px;
+  color: #666;
+  font-weight: 500;
+}
+
+.left-side input,
+.left-side select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s;
+  background: #f8f9fa;
+}
+
+.left-side input:focus,
+.left-side select:focus {
+  outline: none;
+  border-color: #4096ff;
+  box-shadow: 0 0 0 2px rgba(64, 150, 255, 0.1);
+}
+
+.left-side input:disabled,
+.left-side select:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+
+/* Buttons */
+.buttons {
+  margin-top: 8px;
+}
+
+.button-on,
+.button-off {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.button-on {
+  background: #4096ff;
+  color: white;
+}
+
+.button-on:hover {
+  background: #1677ff;
+}
+
+.button-off {
+  background: #ff4d4f;
+  color: white;
+}
+
+.button-off:hover {
+  background: #f5222d;
+}
+
+.icon-button {
+  padding: 5px;
+  cursor: pointer;
+}
+
+.icon-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.avatar-select option.available {
+  color: green;
+}
+
+.avatar-select option.unavailable {
+  color: red;
+} 
