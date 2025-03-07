@@ -1,0 +1,38 @@
+.avatar-select {
+  flex: 1;
+}
+
+.icon-button {
+  padding: 4px;
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: #f0f0f0;
+}
+
+.icon-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.available {
+  color: green;
+}
+
+.unavailable {
+  color: red;
+} 
