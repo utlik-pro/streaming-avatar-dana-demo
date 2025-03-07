@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ApiService, Language, Voice, Avatar } from '../../apiService';
 import AvatarSelector from '../AvatarSelector';
+import VoiceSelector from '../VoiceSelector';
 import './styles.css';
 
 interface ConfigurationPanelProps {
@@ -57,7 +58,6 @@ export default function ConfigurationPanel({
   const [languages, setLanguages] = useState<Language[]>([]);
   const [voices, setVoices] = useState<Voice[]>([]);
   const [avatars, setAvatars] = useState<Avatar[]>([]);
-  const [useManualVoiceId, setUseManualVoiceId] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -136,48 +136,13 @@ export default function ConfigurationPanel({
           </select>
         </label>
       </div>
-      <div>
-        <label>
-          Voice:
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {!useManualVoiceId ? (
-              <select value={voiceId} onChange={(e) => setVoiceId(e.target.value)} disabled={!voices.length}>
-                <option value="">Select a voice</option>
-                {voices.map((voice, index) => (
-                  <option key={index} value={voice.voice_id}>
-                    {voice.name}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type="text"
-                value={voiceId}
-                onChange={(e) => setVoiceId(e.target.value)}
-                placeholder="Enter voice ID"
-              />
-            )}
-            <button
-              onClick={() => setUseManualVoiceId(!useManualVoiceId)}
-              className="icon-button"
-              title={useManualVoiceId ? 'Switch to dropdown' : 'Switch to manual input'}
-            >
-              <span className="material-icons">{useManualVoiceId ? 'list' : 'edit'}</span>
-            </button>
-          </div>
-        </label>
-      </div>
-      <div>
-        <label>
-          Voice URL:
-          <input
-            type="text"
-            value={voiceUrl}
-            onChange={(e) => setVoiceUrl(e.target.value)}
-            placeholder="Enter voice URL"
-          />
-        </label>
-      </div>
+      <VoiceSelector
+        voiceId={voiceId}
+        setVoiceId={setVoiceId}
+        voices={voices}
+        voiceUrl={voiceUrl}
+        setVoiceUrl={setVoiceUrl}
+      />
       <div>
         <label>
           Background URL:
