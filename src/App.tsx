@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import './App.css';
-import AgoraRTC, { IAgoraRTCRemoteUser, IMicrophoneAudioTrack, NetworkQuality } from 'agora-rtc-sdk-ng';
+import { IAgoraRTCRemoteUser, IMicrophoneAudioTrack, NetworkQuality } from 'agora-rtc-sdk-ng';
 import { UID } from 'agora-rtc-sdk-ng/esm';
 import { Session, ApiService, Credentials } from './apiService';
 
 import {
-  RTCClient,
   setAvatarParams,
   log,
   StreamMessage,
@@ -17,17 +16,16 @@ import ConfigurationPanel from './components/ConfigurationPanel';
 import NetworkQualityDisplay, { NetworkStats } from './components/NetworkQuality';
 import VideoDisplay from './components/VideoDisplay';
 import ChatInterface from './components/ChatInterface';
-
-const client: RTCClient = AgoraRTC.createClient({
-  mode: 'rtc',
-  codec: 'vp8',
-}) as RTCClient;
+import { useAgora } from './contexts/AgoraContext';
+import { useAudioControls } from './hooks/useAudioControls';
 
 let audioTrack: IMicrophoneAudioTrack | null;
 
 // let uid: UID = 0;
 
 function App() {
+  const { client } = useAgora();
+  const { micEnabled, setMicEnabled, toggleMic } = useAudioControls();
   const [isJoined, setIsJoined] = useState(false);
 
   const joinChannel = async (credentials: Credentials) => {
@@ -124,7 +122,6 @@ function App() {
   const [messageMap, setMessageMap] = useState<Map<string, Message>>(new Map());
   const [messageIds, setMessageIds] = useState<string[]>([]);
   const [connected, setConnected] = useState(false);
-  const [micEnabled, setMicEnabled] = useState(false);
 
   const [modeType, setModeType] = useState(2);
   const [language, setLanguage] = useState('en');
@@ -211,7 +208,6 @@ function App() {
   const leaveChat = async () => {
     client.removeAllListeners('stream-message');
 
-    setMicEnabled(false);
     setConnected(false);
     setMessageIds([]);
     setMessageMap(new Map());
@@ -301,6 +297,7 @@ function App() {
           setMessageMap={setMessageMap}
           micEnabled={micEnabled}
           setMicEnabled={setMicEnabled}
+          toggleMic={toggleMic}
         />
         <div>{isJoined && remoteStats && <NetworkQualityDisplay stats={remoteStats} />}</div>
       </div>
