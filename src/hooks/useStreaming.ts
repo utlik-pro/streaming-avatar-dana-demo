@@ -6,23 +6,14 @@ import {
   setAvatarParams,
   log,
   StreamMessage,
-  ChatResponsePayload,
   CommandResponsePayload
 } from '../agoraHelper';
 import { NetworkStats } from '../components/NetworkQuality';
 import { useAgora } from '../contexts/AgoraContext';
 
-interface Message {
-  id: string;
-  text: string;
-  isSentByMe: boolean;
-}
-
 interface StreamingState {
   isJoined: boolean;
   connected: boolean;
-  messageMap: Map<string, Message>;
-  messageIds: string[];
   remoteStats: NetworkStats | null;
   session: Session | null;
 }
@@ -40,8 +31,6 @@ export const useStreaming = (
   const [state, setState] = useState<StreamingState>({
     isJoined: false,
     connected: false,
-    messageMap: new Map(),
-    messageIds: [],
     remoteStats: null,
     session: null
   });
@@ -84,45 +73,12 @@ export const useStreaming = (
   const onStreamMessage = useCallback((uid: UID, body: Uint8Array) => {
     const msg = new TextDecoder().decode(body);
     log(`stream-message, uid=${uid}, size=${body.length}, msg=${msg}`);
-    const { v, type, mid, pld } = JSON.parse(msg) as StreamMessage;
+    const { v, type, pld } = JSON.parse(msg) as StreamMessage;
     if (v !== 2) {
       log(`unsupported message version, v=${v}`);
       return;
     }
-    if (type === 'chat') {
-      const { text, from } = pld as ChatResponsePayload;
-      setState(prevState => {
-        const msg_id = `${type}_${mid}`;
-        const newMap = new Map(prevState.messageMap);
-        if (!newMap.has(msg_id)) {
-          const msg = {
-            id: msg_id,
-            text,
-            isSentByMe: from === 'user',
-          };
-          newMap.set(msg_id, msg);
-          const newMessageIds = [...prevState.messageIds];
-          if (!newMessageIds.includes(msg_id)) {
-            newMessageIds.push(msg_id);
-          }
-          return {
-            ...prevState,
-            messageMap: newMap,
-            messageIds: newMessageIds
-          };
-        } else {
-          const msg = newMap.get(msg_id);
-          if (msg) {
-            msg.text += text;
-            newMap.set(msg_id, msg);
-          }
-          return {
-            ...prevState,
-            messageMap: newMap
-          };
-        }
-      });
-    } else if (type === 'cmd') {
+    if (type === 'cmd') {
       const { cmd, code, msg } = pld as CommandResponsePayload;
       log(`cmd-response, cmd=${cmd}, code=${code}, msg=${msg}`);
       if (code !== 1000) {
@@ -201,8 +157,6 @@ export const useStreaming = (
 
     updateState({
       connected: false,
-      messageIds: [],
-      messageMap: new Map()
     });
   }, [client]);
 
@@ -246,7 +200,5 @@ export const useStreaming = (
     ...state,
     startStreaming,
     closeStreaming,
-    setMessageMap: (messageMap: Map<string, Message>) => updateState({ messageMap }),
-    setMessageIds: (messageIds: string[]) => updateState({ messageIds }),
   };
 };

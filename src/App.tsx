@@ -39,13 +39,9 @@ function App() {
   const {
     isJoined,
     connected,
-    messageMap,
-    messageIds,
     remoteStats,
     startStreaming,
     closeStreaming,
-    setMessageMap,
-    setMessageIds
   } = useStreaming(
     avatarId,
     sessionDuration,
@@ -54,12 +50,6 @@ function App() {
     modeType,
     api
   );
-
-  interface Message {
-    id: string;
-    text: string;
-    isSentByMe: boolean;
-  }
 
   return (
     <>
@@ -93,10 +83,6 @@ function App() {
         <ChatInterface
           client={client}
           connected={connected}
-          messageIds={messageIds}
-          setMessageIds={setMessageIds as React.Dispatch<React.SetStateAction<string[]>>}
-          messageMap={messageMap}
-          setMessageMap={setMessageMap as React.Dispatch<React.SetStateAction<Map<string, Message>>>}
           micEnabled={micEnabled}
           setMicEnabled={setMicEnabled}
           toggleMic={toggleMic}

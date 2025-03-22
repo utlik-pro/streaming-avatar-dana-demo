@@ -1,20 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
-import { RTCClient, sendMessageToAvatar, interruptResponse } from '../../agoraHelper';
+import { useRef, useEffect, useCallback } from 'react';
+import { RTCClient, interruptResponse } from '../../agoraHelper';
+import { useMessageState } from '../../hooks/useMessageState';
 import './styles.css';
-
-interface Message {
-  id: string;
-  text: string;
-  isSentByMe: boolean;
-}
 
 interface ChatInterfaceProps {
   client: RTCClient;
   connected: boolean;
-  messageIds: string[];
-  setMessageIds: React.Dispatch<React.SetStateAction<string[]>>;
-  messageMap: Map<string, Message>;
-  setMessageMap: React.Dispatch<React.SetStateAction<Map<string, Message>>>;
   micEnabled: boolean;
   setMicEnabled: (enabled: boolean) => void;
   toggleMic?: () => Promise<void>;
@@ -23,45 +14,37 @@ interface ChatInterfaceProps {
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   client,
   connected,
-  messageIds,
-  setMessageIds,
-  messageMap,
-  setMessageMap,
   micEnabled,
   setMicEnabled,
   toggleMic,
 }) => {
-  const [inputMessage, setInputMessage] = useState('');
-  const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const handleStreamMessage = useCallback((uid: number, body: Uint8Array) => {
+    const msg = new TextDecoder().decode(body);
+    const { v, type, mid, pld } = JSON.parse(msg);
+    if (v !== 2) {
+      console.log(`unsupported message version, v=${v}`);
+      return;
+    }
+    if (type === 'chat') {
+      const { text, from } = pld;
+      addReceivedMessage(`${type}_${mid}`, text);
+    }
+  }, []);
+
+  const { messages, inputMessage, setInputMessage, sendMessage, addReceivedMessage } = useMessageState({
+    client,
+    connected,
+    onStreamMessage: handleStreamMessage,
+  });
 
   useEffect(() => {
     scrollToBottom();
-  }, [messageIds]);
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const sendMessage = async () => {
-    if (!inputMessage.trim() || !connected) return;
-
-    setSending(true);
-    const messageId = Date.now().toString();
-    setMessageIds((prev) => [...prev, messageId]);
-    setMessageMap((prev) => {
-      const newMap = new Map(prev);
-      newMap.set(messageId, {
-        id: messageId,
-        text: inputMessage,
-        isSentByMe: true,
-      });
-      return newMap;
-    });
-
-    await sendMessageToAvatar(client, messageId, inputMessage);
-    setInputMessage('');
-    setSending(false);
   };
 
   const toggleMicInternal = async () => {
@@ -72,10 +55,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     // Fallback implementation if toggleMic is not provided
     if (!micEnabled) {
-      // Implementation removed as it's now handled by the useAudioControls hook
       setMicEnabled(true);
     } else {
-      // Implementation removed as it's now handled by the useAudioControls hook
       setMicEnabled(false);
     }
     console.log(`Microphone is now ${micEnabled ? 'enabled' : 'disabled'}`);
@@ -84,25 +65,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   return (
     <div className="chat-window">
       <div className="chat-messages">
-        {messageIds.map((id) => {
-          const message = messageMap.get(id);
-          if (!message) return null;
-          return (
-            <div
-              key={id}
-              className={`chat-message ${message.isSentByMe ? 'sent' : 'received'}`}
-            >
-              {message.text}
-            </div>
-          );
-        })}
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`chat-message ${message.isSentByMe ? 'sent' : 'received'}`}
+          >
+            {message.text}
+          </div>
+        ))}
         <div ref={messagesEndRef} />
       </div>
       <div className="chat-input">
         <button
           onClick={toggleMicInternal}
-          disabled={sending || !connected}
-          className={`icon-button ${sending || !connected ? 'disabled' : ''}`}
+          disabled={!connected}
+          className={`icon-button ${!connected ? 'disabled' : ''}`}
           title={micEnabled ? 'Disable microphone' : 'Enable microphone'}
         >
           <span className="material-icons">{micEnabled ? 'mic' : 'mic_off'}</span>
@@ -112,24 +89,24 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <input
               type="text"
               placeholder={'Type a message...'}
-              disabled={sending || !connected}
-              className={sending || !connected ? 'disabled' : ''}
+              disabled={!connected}
+              className={!connected ? 'disabled' : ''}
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyUp={(e) => e.key === 'Enter' && sendMessage()}
             />
             <button
               onClick={sendMessage}
-              disabled={sending || !connected}
-              className={`icon-button ${sending || !connected ? 'disabled' : ''}`}
+              disabled={!connected}
+              className={`icon-button ${!connected ? 'disabled' : ''}`}
               title="Send message"
             >
               <span className="material-icons">send</span>
             </button>
             <button
               onClick={() => interruptResponse(client)}
-              disabled={sending || !connected}
-              className={`icon-button ${sending || !connected ? 'disabled' : ''}`}
+              disabled={!connected}
+              className={`icon-button ${!connected ? 'disabled' : ''}`}
               title="Interrupt response"
             >
               <span className="material-icons">stop</span>
