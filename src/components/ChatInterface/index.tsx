@@ -14,7 +14,7 @@ interface ChatInterfaceProps {
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ client, connected, micEnabled, setMicEnabled, toggleMic }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleStreamMessage = useCallback((uid: number, body: Uint8Array) => {
+  const handleStreamMessage = useCallback((_: number, body: Uint8Array) => {
     const msg = new TextDecoder().decode(body);
     const { v, type, mid, pld } = JSON.parse(msg);
     if (v !== 2) {

@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:prod": "tsc && vite build --mode production",
+    "build:ci": "tsc && vite build --mode ci",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "deploy": "rsync -av dist/ stream-aigc.test.vpc.akool:/home/ubuntu/deploy/real-time-web/agora"
