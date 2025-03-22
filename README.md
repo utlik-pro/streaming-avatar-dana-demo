@@ -32,14 +32,13 @@ cd akool-streaming-avatar-react-demo
 2. Install dependencies:
 
 ```bash
-npm install -g yarn
-yarn install
+pnpm install
 ```
 
 3. Start the development server:
 
 ```bash
-yarn dev
+pnpm dev
 ```
 
 The application will be available at `http://localhost:5173/streaming/avatar`
@@ -49,7 +48,7 @@ The application will be available at `http://localhost:5173/streaming/avatar`
 Build the application:
 
 ```bash
-yarn build
+pnpm build:prod
 ```
 
 The built application will be in the `dist` directory.
