@@ -10,13 +10,7 @@ interface VoiceSelectorProps {
   setVoiceUrl: (url: string) => void;
 }
 
-export default function VoiceSelector({
-  voiceId,
-  setVoiceId,
-  voices,
-  voiceUrl,
-  setVoiceUrl,
-}: VoiceSelectorProps) {
+export default function VoiceSelector({ voiceId, setVoiceId, voices, voiceUrl, setVoiceUrl }: VoiceSelectorProps) {
   const [useManualVoiceId, setUseManualVoiceId] = useState(false);
 
   return (
@@ -65,4 +59,4 @@ export default function VoiceSelector({
       </div>
     </div>
   );
-} 
+}

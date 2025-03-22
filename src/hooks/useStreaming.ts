@@ -2,12 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { IAgoraRTCRemoteUser, NetworkQuality } from 'agora-rtc-sdk-ng';
 import { UID } from 'agora-rtc-sdk-ng/esm';
 import { Session, ApiService, Credentials } from '../apiService';
-import {
-  setAvatarParams,
-  log,
-  StreamMessage,
-  CommandResponsePayload
-} from '../agoraHelper';
+import { setAvatarParams, log, StreamMessage, CommandResponsePayload } from '../agoraHelper';
 import { NetworkStats } from '../components/NetworkQuality';
 import { useAgora } from '../contexts/AgoraContext';
 
@@ -24,7 +19,7 @@ export const useStreaming = (
   voiceId: string,
   language: string,
   modeType: number,
-  api: ApiService | null
+  api: ApiService | null,
 ) => {
   const { client } = useAgora();
 
@@ -32,12 +27,12 @@ export const useStreaming = (
     isJoined: false,
     connected: false,
     remoteStats: null,
-    session: null
+    session: null,
   });
 
   // Helper function to update state partially
   const updateState = (newState: Partial<StreamingState>) => {
-    setState(prevState => ({ ...prevState, ...newState }));
+    setState((prevState) => ({ ...prevState, ...newState }));
   };
 
   // Event handlers
@@ -54,21 +49,27 @@ export const useStreaming = (
     closeStreaming();
   }, []);
 
-  const onUserPublish = useCallback(async (user: IAgoraRTCRemoteUser, mediaType: 'video' | 'audio' | 'datachannel') => {
-    log('onUserPublish', user, mediaType);
-    if (mediaType === 'video') {
-      const remoteTrack = await client.subscribe(user, mediaType);
-      remoteTrack.play('remote-video');
-    } else if (mediaType === 'audio') {
-      const remoteTrack = await client.subscribe(user, mediaType);
-      remoteTrack.play();
-    }
-  }, [client]);
+  const onUserPublish = useCallback(
+    async (user: IAgoraRTCRemoteUser, mediaType: 'video' | 'audio' | 'datachannel') => {
+      log('onUserPublish', user, mediaType);
+      if (mediaType === 'video') {
+        const remoteTrack = await client.subscribe(user, mediaType);
+        remoteTrack.play('remote-video');
+      } else if (mediaType === 'audio') {
+        const remoteTrack = await client.subscribe(user, mediaType);
+        remoteTrack.play();
+      }
+    },
+    [client],
+  );
 
-  const onUserUnpublish = useCallback(async (user: IAgoraRTCRemoteUser, mediaType: 'video' | 'audio' | 'datachannel') => {
-    log('onUserUnpublish', user, mediaType);
-    await client.unsubscribe(user, mediaType);
-  }, [client]);
+  const onUserUnpublish = useCallback(
+    async (user: IAgoraRTCRemoteUser, mediaType: 'video' | 'audio' | 'datachannel') => {
+      log('onUserUnpublish', user, mediaType);
+      await client.unsubscribe(user, mediaType);
+    },
+    [client],
+  );
 
   const onStreamMessage = useCallback((uid: UID, body: Uint8Array) => {
     const msg = new TextDecoder().decode(body);
@@ -88,44 +89,47 @@ export const useStreaming = (
   }, []);
 
   // Main functions
-  const joinChannel = useCallback(async (credentials: Credentials) => {
-    const { agora_app_id, agora_channel, agora_token, agora_uid } = credentials;
+  const joinChannel = useCallback(
+    async (credentials: Credentials) => {
+      const { agora_app_id, agora_channel, agora_token, agora_uid } = credentials;
 
-    if (state.isJoined) {
-      await leaveChannel();
-    }
+      if (state.isJoined) {
+        await leaveChannel();
+      }
 
-    client.on('exception', onException);
-    client.on('user-published', onUserPublish);
-    client.on('user-unpublished', onUserUnpublish);
-    client.on('token-privilege-will-expire', onTokenWillExpire);
-    client.on('token-privilege-did-expire', onTokenDidExpire);
+      client.on('exception', onException);
+      client.on('user-published', onUserPublish);
+      client.on('user-unpublished', onUserUnpublish);
+      client.on('token-privilege-will-expire', onTokenWillExpire);
+      client.on('token-privilege-did-expire', onTokenDidExpire);
 
-    await client.join(agora_app_id, agora_channel, agora_token, agora_uid);
+      await client.join(agora_app_id, agora_channel, agora_token, agora_uid);
 
-    client.on('network-quality', (stats: NetworkQuality) => {
-      // Update remote stats
-      const videoStats = client.getRemoteVideoStats();
-      const audioStats = client.getRemoteAudioStats();
-      const networkStats = client.getRemoteNetworkQuality();
+      client.on('network-quality', (stats: NetworkQuality) => {
+        // Update remote stats
+        const videoStats = client.getRemoteVideoStats();
+        const audioStats = client.getRemoteAudioStats();
+        const networkStats = client.getRemoteNetworkQuality();
 
-      // Get the first remote user's stats
-      const firstVideoStats = Object.values(videoStats)[0] || {};
-      const firstAudioStats = Object.values(audioStats)[0] || {};
-      const firstNetworkStats = Object.values(networkStats)[0] || {};
+        // Get the first remote user's stats
+        const firstVideoStats = Object.values(videoStats)[0] || {};
+        const firstAudioStats = Object.values(audioStats)[0] || {};
+        const firstNetworkStats = Object.values(networkStats)[0] || {};
 
-      updateState({
-        remoteStats: {
-          localNetwork: stats,
-          remoteNetwork: firstNetworkStats,
-          video: firstVideoStats,
-          audio: firstAudioStats,
-        }
+        updateState({
+          remoteStats: {
+            localNetwork: stats,
+            remoteNetwork: firstNetworkStats,
+            video: firstVideoStats,
+            audio: firstAudioStats,
+          },
+        });
       });
-    });
 
-    updateState({ isJoined: true });
-  }, [client, onException, onUserPublish, onUserUnpublish, onTokenWillExpire, onTokenDidExpire, state.isJoined]);
+      updateState({ isJoined: true });
+    },
+    [client, onException, onUserPublish, onUserUnpublish, onTokenWillExpire, onTokenDidExpire, state.isJoined],
+  );
 
   const leaveChannel = useCallback(async () => {
     updateState({ isJoined: false });

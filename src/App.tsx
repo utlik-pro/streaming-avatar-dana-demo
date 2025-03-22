@@ -36,19 +36,13 @@ function App() {
     }
   }, [openapiHost, openapiToken]);
 
-  const {
-    isJoined,
-    connected,
-    remoteStats,
-    startStreaming,
-    closeStreaming,
-  } = useStreaming(
+  const { isJoined, connected, remoteStats, startStreaming, closeStreaming } = useStreaming(
     avatarId,
     sessionDuration,
     voiceId,
     language,
     modeType,
-    api
+    api,
   );
 
   return (

@@ -21,11 +21,7 @@ export const AgoraProvider: React.FC<AgoraProviderProps> = ({ children }) => {
     codec: 'vp8',
   }) as RTCClient;
 
-  return (
-    <AgoraContext.Provider value={{ client }}>
-      {children}
-    </AgoraContext.Provider>
-  );
+  return <AgoraContext.Provider value={{ client }}>{children}</AgoraContext.Provider>;
 };
 
 // Create a custom hook to use the context
@@ -35,4 +31,4 @@ export const useAgora = (): AgoraContextType => {
     throw new Error('useAgora must be used within an AgoraProvider');
   }
   return context;
-}; 
+};

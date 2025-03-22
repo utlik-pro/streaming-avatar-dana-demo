@@ -23,7 +23,11 @@ interface UseMessageStateReturn {
   addReceivedMessage: (messageId: string, text: string) => void;
 }
 
-export const useMessageState = ({ client, connected, onStreamMessage }: UseMessageStateProps): UseMessageStateReturn => {
+export const useMessageState = ({
+  client,
+  connected,
+  onStreamMessage,
+}: UseMessageStateProps): UseMessageStateReturn => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -51,7 +55,7 @@ export const useMessageState = ({ client, connected, onStreamMessage }: UseMessa
       isSentByMe: true,
     };
 
-    setMessages(prev => [...prev, newMessage]);
+    setMessages((prev) => [...prev, newMessage]);
     setInputMessage('');
 
     try {
@@ -59,16 +63,16 @@ export const useMessageState = ({ client, connected, onStreamMessage }: UseMessa
     } catch (error) {
       console.error('Failed to send message:', error);
       // Optionally remove the message from state if sending failed
-      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+      setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
     } finally {
       setSending(false);
     }
   }, [client, connected, inputMessage, sending]);
 
   const addReceivedMessage = useCallback((messageId: string, text: string) => {
-    setMessages(prev => {
+    setMessages((prev) => {
       // Check if message already exists
-      const existingMessageIndex = prev.findIndex(msg => msg.id === messageId);
+      const existingMessageIndex = prev.findIndex((msg) => msg.id === messageId);
       if (existingMessageIndex !== -1) {
         // Update existing message
         const newMessages = [...prev];

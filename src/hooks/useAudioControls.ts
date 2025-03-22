@@ -32,6 +32,6 @@ export const useAudioControls = () => {
   return {
     micEnabled,
     setMicEnabled,
-    toggleMic
+    toggleMic,
   };
-}; 
+};

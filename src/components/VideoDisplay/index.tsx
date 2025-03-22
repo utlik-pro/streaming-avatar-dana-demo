@@ -22,19 +22,11 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({ isJoined, avatarVideoUrl })
           style={{ width: '100%', height: '100%', objectFit: 'contain' }}
         />
       ) : (
-        <video
-          id="placeholder-video"
-          hidden={isJoined}
-          src={avatarVideoUrl}
-          loop
-          muted
-          playsInline
-          autoPlay
-        ></video>
+        <video id="placeholder-video" hidden={isJoined} src={avatarVideoUrl} loop muted playsInline autoPlay></video>
       )}
       <video id="remote-video"></video>
     </div>
   );
 };
 
-export default VideoDisplay; 
+export default VideoDisplay;

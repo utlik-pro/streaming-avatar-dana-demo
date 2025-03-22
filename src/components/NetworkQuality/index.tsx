@@ -170,9 +170,7 @@ const NetworkQualityDisplay = ({ stats }: NetworkQualityProps) => {
           <div className="quality-section">
             <div title="Local Upload Quality">
               <span>Local Upload</span>
-              <span
-                className={`quality-indicator ${getQualityClass(stats.localNetwork.uplinkNetworkQuality)}`}
-              ></span>
+              <span className={`quality-indicator ${getQualityClass(stats.localNetwork.uplinkNetworkQuality)}`}></span>
             </div>
             <div title="Local Download Quality">
               <span>Local Download</span>

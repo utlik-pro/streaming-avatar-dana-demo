@@ -11,13 +11,7 @@ interface ChatInterfaceProps {
   toggleMic?: () => Promise<void>;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({
-  client,
-  connected,
-  micEnabled,
-  setMicEnabled,
-  toggleMic,
-}) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ client, connected, micEnabled, setMicEnabled, toggleMic }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleStreamMessage = useCallback((uid: number, body: Uint8Array) => {
@@ -73,10 +67,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     <div className="chat-window">
       <div className="chat-messages">
         {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`chat-message ${message.isSentByMe ? 'sent' : 'received'}`}
-          >
+          <div key={message.id} className={`chat-message ${message.isSentByMe ? 'sent' : 'received'}`}>
             {message.text}
           </div>
         ))}
