@@ -33,7 +33,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   }, []);
 
-  const { messages, inputMessage, setInputMessage, sendMessage, addReceivedMessage } = useMessageState({
+  const { messages, inputMessage, setInputMessage, sendMessage, addReceivedMessage, clearMessages } = useMessageState({
     client,
     connected,
     onStreamMessage: handleStreamMessage,
@@ -42,6 +42,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Add effect to clear messages when connection is lost
+  useEffect(() => {
+    if (!connected) {
+      clearMessages();
+    }
+  }, [connected, clearMessages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
