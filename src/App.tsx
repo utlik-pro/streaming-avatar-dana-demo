@@ -14,17 +14,15 @@ function App() {
   const { client } = useAgora();
   const { micEnabled, setMicEnabled, toggleMic } = useAudioControls();
 
-  const [modeType, setModeType] = useState(2);
-  const [language, setLanguage] = useState('en');
-  const [voiceId, setVoiceId] = useState('Xb7hH8MSUJpSbSDYk0k2');
-  const [backgroundUrl, setBackgroundUrl] = useState('');
-  const [voiceUrl, setVoiceUrl] = useState('');
+  const [modeType, setModeType] = useState(Number(import.meta.env.VITE_MODE_TYPE) || 2);
+  const [language, setLanguage] = useState(import.meta.env.VITE_LANGUAGE || 'en');
+  const [voiceId, setVoiceId] = useState(import.meta.env.VITE_VOICE_ID || '');
+  const [backgroundUrl, setBackgroundUrl] = useState(import.meta.env.VITE_BACKGROUND_URL || '');
+  const [voiceUrl, setVoiceUrl] = useState(import.meta.env.VITE_VOICE_URL || '');
 
-  const [openapiHost, setOpenapiHost] = useState('https://openapi.akool.com');
-  const [avatarId, setAvatarId] = useState('dvp_Tristan_cloth2_1080P');
-  const [avatarVideoUrl, setAvatarVideoUrl] = useState(
-    'https://static.website-files.org/assets/avatar/avatar/streaming_avatar/tristan_10s_silence.mp4',
-  );
+  const [openapiHost, setOpenapiHost] = useState(import.meta.env.VITE_OPENAPI_HOST || '');
+  const [avatarId, setAvatarId] = useState(import.meta.env.VITE_AVATAR_ID || '');
+  const [avatarVideoUrl, setAvatarVideoUrl] = useState(import.meta.env.VITE_AVATAR_VIDEO_URL || '');
 
   const [openapiToken, setOpenapiToken] = useState(import.meta.env.VITE_OPENAPI_TOKEN || '');
   const [sessionDuration, setSessionDuration] = useState(10);
