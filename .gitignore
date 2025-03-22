@@ -129,3 +129,5 @@ dist
 
 package-lock.json
 .DS_Store
+deploy.sh
+.env.*.local

@@ -26,7 +26,7 @@ function App() {
     'https://static.website-files.org/assets/avatar/avatar/streaming_avatar/tristan_10s_silence.mp4',
   );
 
-  const [openapiToken, setOpenapiToken] = useState('');
+  const [openapiToken, setOpenapiToken] = useState(import.meta.env.VITE_OPENAPI_TOKEN || '');
   const [sessionDuration, setSessionDuration] = useState(10);
   const [api, setApi] = useState<ApiService | null>(null);
 
