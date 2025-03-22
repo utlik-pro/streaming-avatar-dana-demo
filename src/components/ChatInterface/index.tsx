@@ -28,7 +28,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       return;
     }
     if (type === 'chat') {
-      const { text, from } = pld;
+      const { text } = pld;
       addReceivedMessage(`${type}_${mid}`, text);
     }
   }, []);

@@ -10,6 +10,7 @@ interface AvatarSelectorProps {
   avatars: Avatar[];
   setAvatars: (avatars: Avatar[]) => void;
   setAvatarVideoUrl: (url: string) => void;
+  disabled?: boolean;
 }
 
 export default function AvatarSelector({
@@ -19,6 +20,7 @@ export default function AvatarSelector({
   avatars,
   setAvatars,
   setAvatarVideoUrl,
+  disabled = false,
 }: AvatarSelectorProps) {
   const [useManualAvatarId, setUseManualAvatarId] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -60,7 +62,7 @@ export default function AvatarSelector({
               <select
                 value={avatarId}
                 onChange={(e) => handleAvatarChange(e.target.value)}
-                disabled={!avatars.length}
+                disabled={!avatars.length || disabled}
                 className="avatar-select"
               >
                 <option value="">Select an avatar</option>
@@ -93,8 +95,8 @@ export default function AvatarSelector({
               </select>
               <button
                 onClick={refreshAvatarList}
-                disabled={isRefreshing || refreshCooldown}
-                className={`icon-button ${isRefreshing || refreshCooldown ? 'disabled' : ''}`}
+                disabled={isRefreshing || refreshCooldown || disabled}
+                className={`icon-button ${isRefreshing || refreshCooldown || disabled ? 'disabled' : ''}`}
                 title={refreshCooldown ? 'Please wait before refreshing again' : 'Refresh avatar list'}
               >
                 <span className={`material-icons ${isRefreshing ? 'spinning' : ''}`}>refresh</span>
@@ -106,6 +108,7 @@ export default function AvatarSelector({
               value={avatarId}
               onChange={(e) => handleAvatarChange(e.target.value)}
               placeholder="Enter avatar ID"
+              disabled={disabled}
             />
           )}
           <button

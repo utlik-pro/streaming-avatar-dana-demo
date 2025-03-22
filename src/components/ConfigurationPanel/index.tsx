@@ -97,34 +97,13 @@ export default function ConfigurationPanel({
       <div>
         <label>
           Host:
-          <input defaultValue={openapiHost} onChange={(e) => setOpenapiHost(e.target.value)} />
+          <input defaultValue={openapiHost} onChange={(e) => setOpenapiHost(e.target.value)} disabled={isJoined} />
         </label>
       </div>
       <div>
         <label>
           Token:
-          <input defaultValue={openapiToken} onChange={(e) => setOpenapiToken(e.target.value)} />
-        </label>
-      </div>
-      <div>
-        <label>
-          Session Duration (minutes):
-          <input
-            type="number"
-            min="1"
-            max="60"
-            value={sessionDuration}
-            onChange={(e) => setSessionDuration(Math.max(1, parseInt(e.target.value) || 1))}
-          />
-        </label>
-      </div>
-      <div>
-        <label>
-          ModeType:
-          <select value={modeType} onChange={(e) => setModeType(parseInt(e.target.value))}>
-            <option value="1">Repeat</option>
-            <option value="2">Dialogue</option>
-          </select>
+          <input defaultValue={openapiToken} onChange={(e) => setOpenapiToken(e.target.value)} disabled={isJoined} />
         </label>
       </div>
       <AvatarSelector
@@ -134,7 +113,30 @@ export default function ConfigurationPanel({
         avatars={avatars}
         setAvatars={setAvatars}
         setAvatarVideoUrl={setAvatarVideoUrl}
+        disabled={isJoined}
       />
+      <div>
+        <label>
+          Session Duration (minutes):
+          <input
+            type="number"
+            min="1"
+            max="60"
+            value={sessionDuration}
+            onChange={(e) => setSessionDuration(Math.max(1, parseInt(e.target.value) || 1))}
+            disabled={isJoined}
+          />
+        </label>
+      </div>
+      <div>
+        <label>
+          ModeType:
+          <select value={modeType} onChange={(e) => setModeType(parseInt(e.target.value))} disabled={isJoined}>
+            <option value="1">Repeat</option>
+            <option value="2">Dialogue</option>
+          </select>
+        </label>
+      </div>
       <div>
         <label>
           Language:
