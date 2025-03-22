@@ -160,6 +160,17 @@ export const useStreaming = (
     });
   }, [client]);
 
+  // Add effect to update avatar params when they change
+  useEffect(() => {
+    if (state.connected && client) {
+      setAvatarParams(client, {
+        vid: voiceId,
+        lang: language,
+        mode: modeType,
+      });
+    }
+  }, [client, state.connected, voiceId, language, modeType]);
+
   const startStreaming = useCallback(async () => {
     if (!api) {
       alert('Please set host and token first');
